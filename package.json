@@ -1,0 +1,22 @@
+{
+    "name": "nodejs-tvrage",
+    "version": "0.1",
+    "directories": {
+        "lib": "./lib"
+    },
+    "main": "./nodejs-tvrage",
+    "engines": {
+        "node": ">=0.4.0"
+    },
+    "dependencies": {
+        "htmlparser": ">=1.7.3"
+    },
+    "description": "Node module to work as client with tvrage web services",
+    "author": "Nazar Kulyk <nasar.kulyk@googlemail.com>",
+    "homepage": "https://github.com/schamane/nodejs-tvrage",
+    "repository":
+    {
+        "type": "git",
+        "url": "git@github.com:schamane/nodejs-tvrage.git"
+    }
+}
