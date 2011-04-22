@@ -18,7 +18,7 @@ npm install nodejs-tvrage
 ## Simple usage
 
 <pre>
-var TvRage = require('./tvrage'),
+var TvRage = require('nodejs-tvrage'),
     tvrage = new TvRage(),
     util = require('util');
 

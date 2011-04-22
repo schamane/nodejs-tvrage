@@ -4,7 +4,7 @@
     "directories": {
         "lib": "./lib"
     },
-    "main": "./nodejs-tvrage",
+    "main": "./tvrage.js",
     "engines": {
         "node": ">=0.4.0"
     },
