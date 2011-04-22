@@ -19,8 +19,92 @@ TvRageParser.ROOT_Info_TAG = "Showinfo";
 TvRageParser.SHOW_TAG = "show";
 TvRageParser.GENRES_TAG = "genres";
 TvRageParser.GENRE_TAG = "genre";
+TvRageParser.NETWORK_TAG = "network";
+TvRageParser.AKAS_TAG = "akas";
+TvRageParser.AKA_TAG = "aka";
+TvRageParser.COUNTRY = "country";
+TvRageParser.PROPERTIES_MAP = { 
+    "showname": "name",
+    "showlink": "link",
+    "origin_country": "country"
+};
 
 inherits(TvRageParser, htmlparser.DefaultHandler);
+
+/*
+ * parse generic properties array
+ * @method _parsePropertiesArray
+ * @private
+ * @param {String} tag
+ * @param {Object} properties
+ * @return {Array | Null}
+ */
+TvRageParser.prototype._parsePropertiesArray = function(tag, properties, subtag) {
+    var items, attr, value, result = null;
+    try {
+        items = DomUtils.getElementsByTagName(tag, properties, false);
+    } catch(ex) {}
+    if(items && items.length) {
+        result = [];
+        items.forEach(function(item) {
+            attr = item.attribs;
+            value = item.children[0].data;
+            if(attr && subtag && attr[subtag]) {
+                attr = attr[subtag];
+                result[attr] = value;
+            } else {
+                result.push(value);
+            }
+        }.bind(this));
+    }
+    return result;
+};
+
+/*
+ * parse generic properties
+ * @method _parseProperties
+ * @private
+ * @param {Array} properties
+ * @param {Boolean} map properties tag
+ * @return {Array}
+ */
+TvRageParser.prototype._parseProperties = function(properties, map) {
+    var tag, genres, value, attribs, country, akas,
+        result = {};
+    
+    properties.forEach(function(prop){
+        tag = prop.name;
+        if(map && TvRageParser.PROPERTIES_MAP[tag]) {
+            tag = TvRageParser.PROPERTIES_MAP[tag];
+        }
+        
+        if(tag === TvRageParser.GENRES_TAG){
+            genres = this._parsePropertiesArray(TvRageParser.GENRE_TAG, prop.children);
+            if(genres) {
+                result[tag]= genres;
+            }                
+        } else if(tag === TvRageParser.NETWORK_TAG) {
+            attribs = prop.attribs;
+            result[tag] = {};
+            if(attribs && attribs.country)
+                country = attribs.country;
+            else
+                country = "unknown";
+            result[tag][country] = prop.children[0].data;
+        } else if(tag === TvRageParser.AKAS_TAG) {
+            akas = this._parsePropertiesArray(TvRageParser.AKA_TAG, prop.children, TvRageParser.COUNTRY);
+            if(akas) {
+                result[tag]= akas;
+            }
+        } else if(prop.children && prop.children.length === 1) {
+            value = prop.children[0].data;
+            if(value) {
+                result[tag] = value;
+            }
+        }
+    }.bind(this));
+    return result;
+};
 
 /*
  * overwrite default parser method done to recognise result show data
@@ -41,13 +125,12 @@ TvRageParser.prototype.done = function() {
                 feedRoot = feedRoot.children;
                 feedRoot.forEach(function(show) {
                     if(show.name === TvRageParser.SHOW_TAG) {
-                        this._parserShow(show);
+                        this._parseShowResult(show);
                     }
                 }.bind(this));
                 break;
             case TvRageParser.ROOT_Info_TAG :
-                //console.log(feedRoot.children);
-                this._parserShow(feedRoot);
+                this._parseShowInfo(feedRoot);
                 break;
             default:
                 break;
@@ -58,34 +141,27 @@ TvRageParser.prototype.done = function() {
 };
 
 /*
- * Parse dom object containing show informations
- * @method _parseShow
+ * Parse dom object containing show informations from results response
+ * @method _parseShowResult
  * @private
  * @param {Object} item passed as show dom object to parse
  */
-TvRageParser.prototype._parserShow = function(item) {
-    var show = {},
-        tag, value, genres,
-        properties = item.children;
-    properties.forEach(function(prop){
-        tag = prop.name;
-        if(tag === TvRageParser.GENRES_TAG){
-            try {
-                genres = DomUtils.getElementsByTagName(TvRageParser.GENRE_TAG, prop.children, false);
-            } catch(ex) {}
-            if(genres && genres.length) {
-                    show.genres = [];
-                    genres.forEach(function(genre) {
-                        show.genres.push(genre.children[0].data);
-                    }.bind(this));
-                }
-        } else if(prop.children && prop.children.length === 1) {
-            value = prop.children[0].data;
-            if(value) {
-                show[tag] = value;
-            }
-        }
-    }.bind(this));
+TvRageParser.prototype._parseShowResult = function(item) {
+    var properties = item.children,
+        show = this._parseProperties(properties);
+    
+    this.results.push(show);
+};
+
+/*
+ * Parse dom object containing show informations from show information response
+ * @method _parseShowInfo
+ * @private
+ * @param {Object} item passed as show dom object to parse
+ */
+TvRageParser.prototype._parseShowInfo = function(item) {
+    var properties = item.children,
+        show = this._parseProperties(properties, true);
     
     this.results.push(show);
 };
