@@ -14,8 +14,9 @@ var TvRageParser = function(callback) {
     TvRageParser.super_.call(this, callback, {ignoreWhitespace: true, verbose: false, enforceEmptyTags: false});
 };
 
-TvRageParser.ROOT_Results_TAG = "Results";
-TvRageParser.ROOT_Info_TAG = "Showinfo";
+TvRageParser.ROOT_RESULTS_TAG = "Results";
+TvRageParser.ROOT_INFO_TAG = "Showinfo";
+TvRageParser.ROOT_EPISODE_TAG = "Show";
 TvRageParser.SHOW_TAG = "show";
 TvRageParser.GENRES_TAG = "genres";
 TvRageParser.GENRE_TAG = "genre";
@@ -23,6 +24,10 @@ TvRageParser.NETWORK_TAG = "network";
 TvRageParser.AKAS_TAG = "akas";
 TvRageParser.AKA_TAG = "aka";
 TvRageParser.COUNTRY = "country";
+TvRageParser.SEASONS_COUNT = "totalseasons";
+TvRageParser.EPISODELIST_TAG = "Episodelist";
+TvRageParser.SEASONS_TAG = "Season";
+TvRageParser.EPISODE_TAG = "episode";
 TvRageParser.PROPERTIES_MAP = { 
     "showname": "name",
     "showlink": "link",
@@ -35,9 +40,10 @@ inherits(TvRageParser, htmlparser.DefaultHandler);
  * parse generic properties array
  * @method _parsePropertiesArray
  * @private
- * @param {String} tag
- * @param {Object} properties
- * @return {Array | Null}
+ * @param {String} tag to search for array
+ * @param {Object} properties dom
+ * @param {String} subtag optional
+ * @return {Array | Null} returns back an parsed array or null
  */
 TvRageParser.prototype._parsePropertiesArray = function(tag, properties, subtag) {
     var items, attr, value, result = null;
@@ -64,9 +70,9 @@ TvRageParser.prototype._parsePropertiesArray = function(tag, properties, subtag)
  * parse generic properties
  * @method _parseProperties
  * @private
- * @param {Array} properties
- * @param {Boolean} map properties tag
- * @return {Array}
+ * @param {Object} properties dom
+ * @param {Boolean} map properties tag optional
+ * @return {Object} return parsed array or empty object
  */
 TvRageParser.prototype._parseProperties = function(properties, map) {
     var tag, genres, value, attribs, country, akas,
@@ -112,25 +118,34 @@ TvRageParser.prototype._parseProperties = function(properties, map) {
  */
 TvRageParser.prototype.done = function() {
     var feedRoot,
-        found = DomUtils.getElementsByTagName(function (value) {return(value === TvRageParser.ROOT_Results_TAG || value === TvRageParser.ROOT_Info_TAG);}, this.dom, false);
+        found = DomUtils.getElementsByTagName(function (value) {
+            return(value === TvRageParser.ROOT_RESULTS_TAG || 
+                value === TvRageParser.ROOT_INFO_TAG ||
+                value === TvRageParser.ROOT_EPISODE_TAG);
+        }, this.dom, false);
     
     if (found.length) {
         feedRoot = found[0];
     }
     
-    this.results = [];
+    this.results = null;
     if(feedRoot) {
         switch(feedRoot.name) {
-            case TvRageParser.ROOT_Results_TAG :
+            case TvRageParser.ROOT_RESULTS_TAG :
                 feedRoot = feedRoot.children;
+                this.results = [];
                 feedRoot.forEach(function(show) {
                     if(show.name === TvRageParser.SHOW_TAG) {
                         this._parseShowResult(show);
                     }
                 }.bind(this));
                 break;
-            case TvRageParser.ROOT_Info_TAG :
+            case TvRageParser.ROOT_INFO_TAG :
                 this._parseShowInfo(feedRoot);
+                break;
+            case TvRageParser.ROOT_EPISODE_TAG:
+                this.results = {};
+                this._parseEpisodesList(feedRoot);
                 break;
             default:
                 break;
@@ -163,7 +178,43 @@ TvRageParser.prototype._parseShowInfo = function(item) {
     var properties = item.children,
         show = this._parseProperties(properties, true);
     
-    this.results.push(show);
+    this.results = show;
+};
+
+/*
+ * Parse dom object containing episodes list informations
+ * @method _parseEpisodesList
+ * @private
+ * @param {Object} item passed as show dom object to parse
+ */
+TvRageParser.prototype._parseEpisodesList = function(item) {
+    var properties = item.children,
+        count, seasons, list, episode, seasonlist = [], seasonNumber = 0, episodeNumber = 0;
+    
+    try {
+        count = DomUtils.getElementsByTagName(TvRageParser.SEASONS_COUNT, properties, false)[0].children[0].data;
+    } catch(ex) {}
+    if(count) {
+        this.results[TvRageParser.SEASONS_COUNT] = count;
+    }
+    try{
+        list = DomUtils.getElementsByTagName(TvRageParser.EPISODELIST_TAG, properties)[0].children;
+        DomUtils.getElementsByTagName(TvRageParser.SEASONS_TAG, list).forEach(function(seasons){
+            seasonNumber = parseInt(seasons.attribs.no);
+            seasonlist[seasonNumber] = [];
+            DomUtils.getElementsByTagName(TvRageParser.EPISODE_TAG, seasons.children).forEach(function(item){
+                episode = this._parseProperties(item.children);
+                episodeNumber = parseInt(episode.epnum);
+                if(seasonNumber && episodeNumber) {
+                    delete episode.epnum;
+                    seasonlist[seasonNumber][episodeNumber] = episode;
+                }
+            }.bind(this));
+        }.bind(this));
+    } catch(ex) {}
+    if(seasonlist.length) {
+        this.results[TvRageParser.EPISODELIST_TAG] = seasonlist;
+    }
 };
 
 module.exports = TvRageParser;

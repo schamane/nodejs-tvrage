@@ -7,16 +7,24 @@ var TvRage = require('./tvrage'),
     tvrage = new TvRage(),
     util = require('util');
 
-//console.log(util.inspect(tvrage.toString()));
+console.log(tvrage.toString());
 
-/*
+//Example how to find some show by name
+
 tvrage.search('The Event', function(res) {
-    console.log(util.inspect(res));
-}.bind(this));
-*/
+    //console.log(util.inspect(res[0]));
+    var num = parseInt(res[0].showid);
 
-//tvrage.getInfo(25703, function(res) {
-tvrage.getInfo(2930, function(res) {
-    console.log(util.inspect(res));
-    console.log(util.inspect(res[0].akas['DE']));
-}.bind(this));
+    //Example how to get show inforamtions by show id
+    tvrage.showInfo(num, function(res) {
+        console.log("Show Info:")
+        console.log(util.inspect(res));
+    });
+    
+    //Example how to get episode list for the show by id
+    tvrage.episodeList(num, function(res) {
+        console.log("Episodes Info:")
+        console.log("episodes count:"+util.inspect(res.totalseasons));
+        console.log("title of the S01E01:"+util.inspect(res.Episodelist[1][1].title));
+    });
+});
