@@ -14,3 +14,15 @@ There are 3 methods implemented:
 <pre>
 npm install nodejs-tvrage
 </pre>
+
+## Simple usage
+
+<pre>
+var TvRage = require('./tvrage'),
+    tvrage = new TvRage(),
+    util = require('util');
+
+tvrage.search('buffy', function(res) {
+    console.log(util.inspect(res[0]));
+});
+</pre>
