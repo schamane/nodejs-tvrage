@@ -19,6 +19,7 @@ TvRage.PATH_PREFIX = '/feeds/';
 TvRage.SEARCH_URI = "search.php?";
 TvRage.INFO_URI = "showinfo.php?";
 TvRage.EPISODE_LIST_URI = "episode_list.php?";
+TvRage.EPISODE_INFO_URI = "episodeinfo.php?";
 TvRage.HTTP_OPTIONS = {
     host: 'services.tvrage.com',
     port: 80,
@@ -117,6 +118,23 @@ TvRage.prototype.episodeList = function(id, callback) {
         query = this.querystring.stringify({sid: id});
     
     options.path = TvRage.PATH_PREFIX + TvRage.EPISODE_LIST_URI + query;
+    this._request(options, callback);
+};
+
+/*
+ * Get episode info for the show by id and episode number
+ * @method episodeList
+ * @param {Int} id of the tv show to get episode info
+ * @param {Int} season of the tv show to get episode info
+ * @param {Int} episode of the tv show to get episode info
+ * @param {Function} callback that should be called after response was received
+ */
+TvRage.prototype.episodeInfo = function(id, season, episode, callback) {
+    var options = TvRage.HTTP_OPTIONS,
+        episodeNum = season + 'x' + episode,
+        query = this.querystring.stringify({sid: id, ep: episodeNum});
+    
+    options.path = TvRage.PATH_PREFIX + TvRage.EPISODE_INFO_URI + query;
     this._request(options, callback);
 };
 

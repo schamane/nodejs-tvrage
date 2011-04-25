@@ -17,6 +17,7 @@ var TvRageParser = function(callback) {
 TvRageParser.ROOT_RESULTS_TAG = "Results";
 TvRageParser.ROOT_INFO_TAG = "Showinfo";
 TvRageParser.ROOT_EPISODE_TAG = "Show";
+TvRageParser.ROOT_EPISODE_INFO_TAG = "show";
 TvRageParser.SHOW_TAG = "show";
 TvRageParser.GENRES_TAG = "genres";
 TvRageParser.GENRE_TAG = "genre";
@@ -28,6 +29,7 @@ TvRageParser.SEASONS_COUNT = "totalseasons";
 TvRageParser.EPISODELIST_TAG = "Episodelist";
 TvRageParser.SEASONS_TAG = "Season";
 TvRageParser.EPISODE_TAG = "episode";
+TvRageParser.EPISODEINFO_TAG = "episode";
 TvRageParser.PROPERTIES_MAP = { 
     "showname": "name",
     "showlink": "link",
@@ -121,7 +123,8 @@ TvRageParser.prototype.done = function() {
         found = DomUtils.getElementsByTagName(function (value) {
             return(value === TvRageParser.ROOT_RESULTS_TAG || 
                 value === TvRageParser.ROOT_INFO_TAG ||
-                value === TvRageParser.ROOT_EPISODE_TAG);
+                value === TvRageParser.ROOT_EPISODE_TAG ||
+                value === TvRageParser.ROOT_EPISODE_INFO_TAG);
         }, this.dom, false);
     
     if (found.length) {
@@ -146,6 +149,10 @@ TvRageParser.prototype.done = function() {
             case TvRageParser.ROOT_EPISODE_TAG:
                 this.results = {};
                 this._parseEpisodesList(feedRoot);
+                break;
+            case TvRageParser.ROOT_EPISODE_INFO_TAG:
+                this.results = {};
+                this._parseEpisodeInfo(feedRoot);
                 break;
             default:
                 break;
@@ -214,6 +221,24 @@ TvRageParser.prototype._parseEpisodesList = function(item) {
     } catch(ex) {}
     if(seasonlist.length) {
         this.results[TvRageParser.EPISODELIST_TAG] = seasonlist;
+    }
+};
+
+/*
+ * Parse dom object containing episode informations
+ * @method _parseEpisodeInfo
+ * @private
+ * @param {Object} item passed as show dom object to parse
+ */
+TvRageParser.prototype._parseEpisodeInfo = function(item) {
+    var properties = item.children,
+        episode;
+    
+    try{
+        episode = DomUtils.getElementsByTagName(TvRageParser.EPISODEINFO_TAG, properties)[0].children;
+    } catch(ex) {}
+    if(episode) {
+        this.results = this._parseProperties(episode, true);
     }
 };
 
