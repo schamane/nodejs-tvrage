@@ -12,6 +12,13 @@
         "htmlparser": ">=1.7.3"
     },
     "description": "Node module to work as client with tvrage web services",
+    "tags": [
+	"node",
+	"tvshows",
+	"tvrage",
+	"tvseries",
+	"client"
+    ],
     "author": "Nazar Kulyk <nasar.kulyk@googlemail.com>",
     "homepage": "https://github.com/schamane/nodejs-tvrage",
     "repository":
